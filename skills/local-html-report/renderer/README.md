@@ -84,8 +84,8 @@ those vendored copies when desired (this also re-fetches the pinned D3 and Obser
 ../scripts/local-report update-assets
 ```
 
-Code uses an installed Iosevka, or the system monospace font. To bundle Iosevka builds, add
-`iosevka-c.ttf`, `iosevka-haskell.ttf` and `iosevka-dlig-nerd.ttf` to `assets/fonts/`. None are shipped.
+Fonts are bundled in `assets/fonts/` as `woff2`: Source Sans 3 (variable) for prose and Iosevka
+(regular, bold, italic subset) for code, with their OFL licence texts. Icons are Font Awesome Free.
 
 ## Charts
 

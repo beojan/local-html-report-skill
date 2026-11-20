@@ -13,8 +13,8 @@ same folder works in Claude Code, Codex, and Antigravity.
 
 - [`uv`](https://docs.astral.sh/uv/) (runs the renderer and any analysis or plotting scripts)
 - A browser. Firefox is the tested target.
-- Optional: the Source Sans 3 font installed system-wide (body text and static figures) and
-  Iosevka (code). Without them the browser falls back to other fonts.
+- Optional: Source Sans 3 installed system-wide, but only for static Matplotlib figures. Report
+  pages bundle Source Sans 3 and Iosevka, so they look the same everywhere.
 
 ## Install
 

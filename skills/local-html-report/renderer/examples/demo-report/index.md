@@ -9,7 +9,7 @@ description: A small source fixture for the Markdown report renderer.
 
 ```python
 if left != right:
-    print("Programming ligatures and Nerd Font symbols: ")
+    print("Programming ligatures: != -> >= <=>")
 ```
 
 ## A table
