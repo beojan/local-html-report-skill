@@ -1,6 +1,6 @@
 """Matplotlib setup for static figures embedded in local HTML reports (local-report).
 
-Figures use the ATLAS Matplotlib style (`atlas-mpl-style`) with its `print` theme. The plotting
+Figures use the ATLAS Matplotlib style (`atlas-mpl-style`) with its own fonts and colours. The plotting
 script declares its dependencies in a PEP 723 header, so `uv run plot.py` is all that is needed:
 
     # /// script
@@ -8,8 +8,9 @@ script declares its dependencies in a PEP 723 header, so `uv run plot.py` is all
     # dependencies = ["matplotlib", "atlas-mpl-style", "polars"]
     # ///
 
-Text uses the style's own sans-serif font, so no font has to be installed. The page's system
-sans font may differ in face but is set to the same size.
+Text uses the ATLAS style's sans-serif font (Tex Gyre Heros, Helvetica, or a similar fallback)
+and outlines it in the SVG, so the figure looks the same on any machine. The page's system sans
+font may differ in face but is set to the same size.
 
 The page layout (body text size, column width) is read from `renderer/assets/layout.json`, the same
 file the renderer builds its CSS from. A figure exactly one column wide with body-size text shows
@@ -46,7 +47,7 @@ WIDTH_IN = COLUMN_PX / 96  # an SVG renders at 96 px per inch, so this fills the
 def use_report_style(height_in: float = 6.0) -> None:
     """Activate the base style, then set the report text size and width.
 
-    The base style is ATLAS with the `print` theme. `height_in` sets the default figure height
+    The base style is ATLAS. `height_in` sets the default figure height
     in inches. Fonts are left to the style, so nothing needs to be installed.
     """
     import matplotlib.pyplot as plt
@@ -58,7 +59,6 @@ def use_report_style(height_in: float = 6.0) -> None:
     import atlas_mpl_style as ampl
 
     ampl.use_atlas_style(usetex=False)
-    plt.style.use("print")
     plt.rcParams.update(
         {
             "font.size": BODY_PT,

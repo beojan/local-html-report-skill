@@ -90,7 +90,7 @@ Prose uses the system sans font. Iosevka (regular, bold, italic subset) is bundl
 ## Charts
 
 A fenced block with the language `plot` or `d3` becomes an interactive chart that
-uses the report's fonts and the print-theme palette. The renderer loads pinned local
+uses the report's fonts and the ATLAS palette. The renderer loads pinned local
 copies of D3 and Observable Plot, only on pages that contain a chart. The body is
 JavaScript for a function of `(Plot, d3, data, theme)` that must `return` a value.
 
