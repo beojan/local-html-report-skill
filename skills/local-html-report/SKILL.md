@@ -50,8 +50,9 @@ command syntax, styling, source links, charts, and forms.
 
 ## Data analysis
 
-Do all data analysis in [Polars](https://pola.rs) (`uv run --with polars python analysis.py`),
-whether or not the result is plotted. Every number in a table, summary, or finding comes from a
+Do all data analysis in [Polars](https://pola.rs), whether or not the result is plotted.
+Every script starts with a PEP 723 header (`# /// script`, `# dependencies = ["polars"]`,
+`# ///`) and runs with `uv run script.py`, so it needs no extra setup. Every number in a table, summary, or finding comes from a
 computation over the data, never from mental arithmetic or an ad hoc estimate. Keep the
 analysis script with the report sources so the numbers can be reproduced, and write the results
 to a CSV or JSON file under `assets/` for tables and charts.
@@ -61,9 +62,8 @@ to a CSV or JSON file under `assets/` for tables and charts.
 Choose by need:
 
 - **Complex static figures** (statistical plots, ratio panels): Matplotlib in the ATLAS
-  style through `scripts/report_style.py`. Run
-  `uv run --with matplotlib --with atlas-mpl-style python plot.py`, call `use_report_style()`,
-  and save with `save_report_figure(fig, "assets/x.svg")`. This sets body-size text
+  style through `scripts/report_style.py`. Put `matplotlib` and `atlas-mpl-style` in the
+  script's PEP 723 header, call `use_report_style()`, and save with `save_report_figure(fig, "assets/x.svg")`. This sets body-size text
   and a figure exactly one column wide. Do not set `fontsize=` on elements and do not use
   `bbox_inches="tight"`. Embed the SVG.
 - **Interactive or simple plots:** a `plot` fence (Observable Plot).

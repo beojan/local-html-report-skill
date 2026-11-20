@@ -47,8 +47,8 @@ skills/local-html-report/scripts/local-report serve skills/local-html-report/ren
 ```
 
 Data analysis is done in [Polars](https://pola.rs), and static figures use Matplotlib with
-[`atlas-mpl-style`](https://pypi.org/project/atlas-mpl-style/), both run through
-`uv run --with ...`.
+[`atlas-mpl-style`](https://pypi.org/project/atlas-mpl-style/), both declared in each script's
+PEP 723 header and run with `uv run script.py`.
 
 ## Layout
 

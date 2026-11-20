@@ -1,14 +1,15 @@
 """Matplotlib setup for static figures embedded in local HTML reports (local-report).
 
-Figures use the ATLAS Matplotlib style (the public `atlas-mpl-style` package) with its `print`
-theme. Run a plotting script with both packages, for example:
+Figures use the ATLAS Matplotlib style (`atlas-mpl-style`) with its `print` theme. The plotting
+script declares its dependencies in a PEP 723 header, so `uv run plot.py` is all that is needed:
 
-    uv run --with matplotlib --with atlas-mpl-style python plot.py
+    # /// script
+    # requires-python = ">=3.11"
+    # dependencies = ["matplotlib", "atlas-mpl-style", "polars"]
+    # ///
 
-If `atlas_mpl_style` is not installed, a warning is printed and Matplotlib's default style is
-used with the same size and width settings. Text uses the style's own sans-serif font, or
-Matplotlib's default, so no font has to be installed. The page's system sans font may differ in
-face but is set to the same size.
+Text uses the style's own sans-serif font, so no font has to be installed. The page's system
+sans font may differ in face but is set to the same size.
 
 The report's body text is the system sans font at 1.08 rem (17.28 px, or 12.96 pt). An SVG embedded
 in the report displays at its natural size up to the width of the content column (about 1192 px),
@@ -18,7 +19,7 @@ fixed width and height attributes from an SVG while keeping its `viewBox`, becau
 sized in rem and grows wider than 1192 px when the browser's root font size exceeds 16 px. The
 SVG then fills the column at any root font size while its text scales with the body text.
 
-Use it in place of a bare `use_atlas_style` call:
+Use it in place of a bare `use_atlas_style` call, after the header above:
 
     import sys
     sys.path.insert(0, "<skill-dir>/scripts")
@@ -40,26 +41,19 @@ WIDTH_IN = COLUMN_PX / 96  # 12.42 in: an SVG renders at 96 px per inch, so this
 def use_report_style(height_in: float = 6.0) -> None:
     """Activate the base style, then set the report text size and width.
 
-    The base style is ATLAS with the `print` theme, falling back with a warning to Matplotlib's
-    default when `atlas_mpl_style` is missing. `height_in` sets the default figure height in inches.
-    Fonts are left to the style, so nothing needs to be installed.
+    The base style is ATLAS with the `print` theme. `height_in` sets the default figure height
+    in inches. Fonts are left to the style, so nothing needs to be installed.
     """
     import matplotlib.pyplot as plt
     import matplotlib.style as mpl_style
 
-    try:
-        # Keep compatibility with older atlas_mpl_style builds when Matplotlib lacks style.core.
-        if not hasattr(mpl_style, "core"):
-            mpl_style.core = mpl_style
-        import atlas_mpl_style as ampl
+    # Keep compatibility with older atlas_mpl_style builds when Matplotlib lacks style.core.
+    if not hasattr(mpl_style, "core"):
+        mpl_style.core = mpl_style
+    import atlas_mpl_style as ampl
 
-        ampl.use_atlas_style(usetex=False)
-        plt.style.use("print")
-    except ImportError:
-        import warnings
-
-        warnings.warn("atlas_mpl_style is not installed; using Matplotlib's default style. "
-                      "Add `--with atlas-mpl-style` to the uv command.", stacklevel=2)
+    ampl.use_atlas_style(usetex=False)
+    plt.style.use("print")
     plt.rcParams.update(
         {
             "font.size": BODY_PT,
