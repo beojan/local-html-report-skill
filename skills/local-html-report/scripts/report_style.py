@@ -6,9 +6,11 @@ theme. Run a plotting script with both packages, for example:
     uv run --with matplotlib --with atlas-mpl-style python plot.py
 
 If `atlas_mpl_style` is not installed, a warning is printed and Matplotlib's default style is
-used with the same font, size, and width settings.
+used with the same size and width settings. Text uses the style's own sans-serif font, or
+Matplotlib's default, so no font has to be installed. The page's system sans font may differ in
+face but is set to the same size.
 
-The report's body text is Source Sans 3 at 1.08 rem (17.28 px, or 12.96 pt). An SVG embedded
+The report's body text is the system sans font at 1.08 rem (17.28 px, or 12.96 pt). An SVG embedded
 in the report displays at its natural size up to the width of the content column (about 1192 px),
 so a figure that matches the column width with 13 pt text shows its labels at the body text size
 and aligns with interactive charts that fill the column. `save_report_figure` also removes the
@@ -30,27 +32,20 @@ Do not set `fontsize=` on individual text, legends, or ticks. Leave them to inhe
 default so that every label matches the body text.
 """
 
-BODY_FONT = "Source Sans 3"
 BODY_PT = 13.0  # 1.08 rem is 12.96 pt
 COLUMN_PX = 1192  # content column of the report: 76 rem minus the container padding
 WIDTH_IN = COLUMN_PX / 96  # 12.42 in: an SVG renders at 96 px per inch, so this fills the column
 
 
 def use_report_style(height_in: float = 6.0) -> None:
-    """Activate the base style, then set the report font, size, and width.
+    """Activate the base style, then set the report text size and width.
 
     The base style is ATLAS with the `print` theme, falling back with a warning to Matplotlib's
     default when `atlas_mpl_style` is missing. `height_in` sets the default figure height in inches.
-    Raises `RuntimeError` if Source Sans 3 is not installed for Matplotlib, avoiding a silent
-    fallback to another font.
+    Fonts are left to the style, so nothing needs to be installed.
     """
     import matplotlib.pyplot as plt
     import matplotlib.style as mpl_style
-    from matplotlib import font_manager
-
-    installed = {f.name for f in font_manager.fontManager.ttflist}
-    if BODY_FONT not in installed:
-        raise RuntimeError(f"The report font {BODY_FONT!r} is not installed for Matplotlib")
 
     try:
         # Keep compatibility with older atlas_mpl_style builds when Matplotlib lacks style.core.
@@ -67,8 +62,6 @@ def use_report_style(height_in: float = 6.0) -> None:
                       "Add `--with atlas-mpl-style` to the uv command.", stacklevel=2)
     plt.rcParams.update(
         {
-            "font.family": [BODY_FONT],
-            "font.sans-serif": [BODY_FONT],
             "font.size": BODY_PT,
             "axes.labelsize": BODY_PT,
             "axes.titlesize": BODY_PT,
@@ -80,10 +73,6 @@ def use_report_style(height_in: float = 6.0) -> None:
             "figure.figsize": (WIDTH_IN, height_in),
             # Convert text to outlines so the SVG renders identically inside an <img> element.
             "svg.fonttype": "path",
-            "mathtext.fontset": "custom",
-            "mathtext.rm": BODY_FONT,
-            "mathtext.it": f"{BODY_FONT}:italic",
-            "mathtext.bf": f"{BODY_FONT}:bold",
         }
     )
 

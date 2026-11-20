@@ -12,9 +12,10 @@ Each keeps its licence banner. Run `local-report update-assets` to refresh them.
 
 Python dependencies (Markdown, Pygments) are installed by `uv` at run time and are not bundled.
 
-Fonts in `skills/local-html-report/renderer/assets/fonts/`, both under SIL OFL 1.1 (texts in `OFL-*.txt` beside them):
+Font in `skills/local-html-report/renderer/assets/fonts/`, under SIL OFL 1.1 (text in `OFL-Iosevka.txt` beside it):
 
 | Font | Files | Notes |
 | --- | --- | --- |
-| [Source Sans 3](https://github.com/adobe-fonts/source-sans) | `source-sans-3-var.woff2`, `source-sans-3-italic-var.woff2` | Adobe, 3.052. Format conversion only, no glyph changes. |
 | [Iosevka](https://typeof.net/Iosevka/) | `iosevka-regular.woff2`, `iosevka-bold.woff2`, `iosevka-italic.woff2` | Version 34.3.0, subset to Latin, Greek, punctuation, arrows, maths and box drawing. |
+
+Prose uses the system sans font and is not bundled.

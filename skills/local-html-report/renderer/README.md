@@ -84,8 +84,8 @@ those vendored copies when desired (this also re-fetches the pinned D3 and Obser
 ../scripts/local-report update-assets
 ```
 
-Fonts are bundled in `assets/fonts/` as `woff2`: Source Sans 3 (variable) for prose and Iosevka
-(regular, bold, italic subset) for code, with their OFL licence texts. Icons are Font Awesome Free.
+Prose uses the system sans font. Iosevka (regular, bold, italic subset) is bundled in
+`assets/fonts/` as `woff2` for code, with its OFL licence text. Icons are Font Awesome Free.
 
 ## Charts
 

@@ -63,9 +63,9 @@ Choose by need:
 - **Complex static figures** (statistical plots, ratio panels): Matplotlib in the ATLAS
   style through `scripts/report_style.py`. Run
   `uv run --with matplotlib --with atlas-mpl-style python plot.py`, call `use_report_style()`,
-  and save with `save_report_figure(fig, "assets/x.svg")`. This sets Source Sans 3 at body size
+  and save with `save_report_figure(fig, "assets/x.svg")`. This sets body-size text
   and a figure exactly one column wide. Do not set `fontsize=` on elements and do not use
-  `bbox_inches="tight"`. The helper needs Source Sans 3 installed on the machine for Matplotlib (the HTML fonts are bundled). Embed the SVG.
+  `bbox_inches="tight"`. Embed the SVG.
 - **Interactive or simple plots:** a `plot` fence (Observable Plot).
 - **Complex interactive plots:** a `d3` fence.
 
