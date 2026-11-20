@@ -18,7 +18,7 @@ import sys
 import tempfile
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -29,7 +29,8 @@ from urllib.request import urlopen
 import markdown
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
-from pygments.lexers import TextLexer, guess_lexer_for_filename
+from pygments.util import ClassNotFound
+from pygments.lexers import TextLexer, get_lexer_by_name, get_lexer_for_filename, guess_lexer_for_filename
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -78,7 +79,9 @@ code { color: var(--ink); background: transparent; padding: 0; border-radius: 0;
 pre { overflow-x: auto; padding: 1rem; background: var(--code); border: 1px solid var(--line); border-left: .28rem solid var(--blue); border-radius: var(--radius); } pre code { padding: 0; background: transparent; }
 .highlight { margin: 1.35rem 0; overflow: hidden; background: var(--code); border: 1px solid var(--line); border-left: .28rem solid var(--blue); border-radius: var(--radius); } .code-header { display: flex; min-height: 1.8rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .42rem .75rem; color: var(--blue); background: var(--panel-muted); border-bottom: 1px solid var(--line); font: 600 .72rem/1.2 var(--sans); letter-spacing: .045em; } .code-language { margin-left: auto; text-transform: uppercase; } .code-source { min-width: 0; overflow-wrap: anywhere; color: var(--ink); font-family: "Report Iosevka", Iosevka, monospace; font-weight: 400; letter-spacing: 0; text-decoration: none; } .code-source:hover { color: var(--blue); text-decoration: none; } .highlight pre { margin: 0; }
 table.highlighttable { width: 100%; margin: 0; border-collapse: collapse; background: var(--code); border: 0; } table.highlighttable td { padding: 0; border: 0; background: var(--code); vertical-align: top; } table.highlighttable td.linenos { width: 1%; background: var(--panel-muted); border-right: 1px solid var(--line); user-select: none; } table.highlighttable .linenos pre { padding: 1rem .7rem; color: color-mix(in srgb, var(--ink) 90%, transparent); text-align: right; border: 0; border-radius: 0; } table.highlighttable .linenos a { color: inherit; text-decoration: none; } table.highlighttable .linenos a:hover { color: var(--blue); text-decoration: underline; } table.highlighttable .code { width: 100%; } table.highlighttable .code pre { padding: 1rem 1.1rem; border: 0; border-radius: 0; }
-.highlight .diff-line { display: block; margin: 0 -1.1rem; padding: 0 1.1rem; } .highlight .diff-add { color: var(--ink); background: color-mix(in srgb, var(--success) 7%, var(--code)); } .highlight .diff-del { color: var(--ink); background: color-mix(in srgb, var(--danger) 7%, var(--code)); } .highlight .diff-hunk { color: var(--blue); background: color-mix(in srgb, var(--blue) 5%, var(--code)); } .highlight .diff-file { color: var(--heading); font-weight: 700; }
+.diff-view .diff-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .7rem; min-width: 0; } .diff-view .diff-badge { padding: .05rem .45rem; color: var(--blue); border: 1px solid currentColor; border-radius: 1rem; font: 600 .72rem/1.3 var(--sans); letter-spacing: 0; } .diff-count { font: 600 .8rem/1.2 "Report Iosevka", Iosevka, monospace; letter-spacing: 0; } .diff-count-add { color: var(--success); } .diff-count-del { color: var(--danger); }
+.diff-scroll { overflow-x: auto; overflow-y: hidden; } .diff-view .diff-title .code-source { font-size: .9rem; } .diff-table { width: 100%; margin: 0; border-collapse: collapse; background: var(--code); border: 0; } .diff-table td { padding: 0; border: 0; background: transparent; vertical-align: top; white-space: pre; line-height: inherit; } .diff-table .diff-num { width: 1%; min-width: 3.2em; padding: 0 .6rem; color: color-mix(in srgb, var(--ink) 90%, transparent); text-align: right; user-select: none; } .diff-table .diff-num + .diff-num { border-right: 1px solid var(--line); } .diff-table .diff-mark { width: 1%; padding: 0 .55rem; text-align: center; font-weight: 700; user-select: none; } .diff-table .diff-code { width: 100%; padding: 0 1.1rem 0 .4rem; }
+.diff-table .diff-add td { background: color-mix(in srgb, var(--success) 4%, var(--code)); } .diff-table .diff-del td { background: color-mix(in srgb, var(--danger) 4%, var(--code)); } .diff-table .diff-add td:first-child { box-shadow: inset .22rem 0 var(--success); } .diff-table .diff-del td:first-child { box-shadow: inset .22rem 0 var(--danger); } .diff-table .diff-add .diff-mark { color: var(--success); } .diff-table .diff-del .diff-mark { color: var(--danger); } .diff-table .diff-gap td { padding-top: .15rem; padding-bottom: .15rem; color: var(--blue); background: color-mix(in srgb, var(--blue) 5%, var(--code)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); } .diff-table .diff-gap .diff-code { font-style: italic; } .diff-table .diff-gap .diff-num { text-align: center; } .diff-heading { margin-left: .5rem; color: var(--ink); font-style: normal; } .diff-table .diff-note td { color: var(--ink); font-style: italic; }
 .highlight .c, .highlight .c1, .highlight .cm, .code-file .c, .code-file .c1, .code-file .cm { color: #5f5f5f; font-style: italic; } .highlight .s, .highlight .s1, .highlight .s2, .code-file .s, .code-file .s1, .code-file .s2 { color: #496800; } .highlight .m, .highlight .mi, .highlight .mf, .code-file .m, .code-file .mi, .code-file .mf { color: #9c4500; } .highlight .k, .highlight .kc, .highlight .kd, .highlight .kn, .highlight .kr, .code-file .k, .code-file .kc, .code-file .kd, .code-file .kn, .code-file .kr { color: #af005f; } .highlight .o, .highlight .p, .code-file .o, .code-file .p { color: #006684; } .highlight .n, .highlight .nf, .highlight .nn, .code-file .n, .code-file .nf, .code-file .nn { color: #005f87; } .highlight .err, .code-file .err { color: #c00000; }
 body[data-theme="dark"] .highlight .c, body[data-theme="dark"] .highlight .c1, body[data-theme="dark"] .highlight .cm, body[data-theme="dark"] .code-file .c, body[data-theme="dark"] .code-file .c1, body[data-theme="dark"] .code-file .cm { color: #95a3a5; } body[data-theme="dark"] .highlight .s, body[data-theme="dark"] .highlight .s1, body[data-theme="dark"] .highlight .s2, body[data-theme="dark"] .code-file .s, body[data-theme="dark"] .code-file .s1, body[data-theme="dark"] .code-file .s2 { color: #95ab00; } body[data-theme="dark"] .highlight .m, body[data-theme="dark"] .highlight .mi, body[data-theme="dark"] .highlight .mf, body[data-theme="dark"] .code-file .m, body[data-theme="dark"] .code-file .mi, body[data-theme="dark"] .code-file .mf { color: #ed8358; } body[data-theme="dark"] .highlight .k, body[data-theme="dark"] .highlight .kc, body[data-theme="dark"] .highlight .kd, body[data-theme="dark"] .highlight .kn, body[data-theme="dark"] .highlight .kr, body[data-theme="dark"] .code-file .k, body[data-theme="dark"] .code-file .kc, body[data-theme="dark"] .code-file .kd, body[data-theme="dark"] .code-file .kn, body[data-theme="dark"] .code-file .kr { color: #e381b1; } body[data-theme="dark"] .highlight .o, body[data-theme="dark"] .highlight .p, body[data-theme="dark"] .code-file .o, body[data-theme="dark"] .code-file .p { color: #2fb3a9; } body[data-theme="dark"] .highlight .n, body[data-theme="dark"] .highlight .nf, body[data-theme="dark"] .highlight .nn, body[data-theme="dark"] .code-file .n, body[data-theme="dark"] .code-file .nf, body[data-theme="dark"] .code-file .nn { color: #55a7e0; }
 .table-frame { margin: 1.35rem 0; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); } .table-frame table { width: 100%; margin: 0; border: 0; border-collapse: separate; border-spacing: 0; --bs-table-bg: transparent; --bs-table-color: var(--ink); --bs-table-border-color: var(--line); --bs-table-hover-bg: color-mix(in srgb, var(--blue) 7%, transparent); --bs-table-hover-color: var(--ink); }
@@ -200,7 +203,8 @@ def render_priority_badge(tier: str, detail: str | None = None, *, extra_class: 
 CHART_LANGUAGES = {"plot", "d3"}
 FORM_LANGUAGE = "form"
 FORM_FIELDS_LANGUAGE = "form-fields"
-EMBED_LANGUAGES = CHART_LANGUAGES | {FORM_LANGUAGE, FORM_FIELDS_LANGUAGE}
+DIFF_LANGUAGES = {"diff", "patch"}
+EMBED_LANGUAGES = CHART_LANGUAGES | {FORM_LANGUAGE, FORM_FIELDS_LANGUAGE} | DIFF_LANGUAGES
 MAX_CHART_DATA_BYTES = 2 * 1024 * 1024
 CHART_TABLE_ROWS = 25
 
@@ -257,6 +261,227 @@ def extract_charts(page: Page, body: str) -> tuple[str, list[Chart]]:
     if chart_lines is not None:
         raise ValueError(f"Unclosed {chart_header[0] if chart_header else 'chart'} fence in {page.relative}")
     return "\n".join(output), charts
+
+
+@dataclass
+class DiffLine:
+    kind: str  # " ", "+", "-" or "\\" (the "No newline at end of file" note)
+    text: str
+    old: int | None = None
+    new: int | None = None
+
+
+@dataclass
+class DiffHunk:
+    old_start: int
+    old_len: int
+    new_start: int
+    new_len: int
+    heading: str
+    numbered: bool = True
+    lines: list[DiffLine] = field(default_factory=list)
+
+
+@dataclass
+class DiffFile:
+    old_path: str | None = None
+    new_path: str | None = None
+    status: str | None = None  # "new", "deleted", "renamed", "copied" or "binary"
+    hunks: list[DiffHunk] = field(default_factory=list)
+
+    @property
+    def path(self) -> str:
+        return self.new_path or self.old_path or ""
+
+
+HUNK_HEADER = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@ ?(.*)$")
+
+
+def parse_diff(where: str, text: str) -> list[DiffFile]:
+    """Parse unified diff text into files and hunks, numbering every line from the ``@@`` headers.
+
+    Handles ``git diff`` output (file headers, renames, new and deleted files, binary files)
+    and plain ``diff -u`` output. A diff with no ``@@`` header at all becomes one hunk whose
+    lines are not numbered. Raises ``ValueError`` for a line that cannot belong to the diff."""
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    files: list[DiffFile] = []
+    current: DiffFile | None = None
+    hunk: DiffHunk | None = None
+    remaining_old = remaining_new = 0
+    old_number = new_number = 0
+
+    def strip_prefix(path: str, prefix: str) -> str:
+        path = path.split("\t")[0].strip()
+        return path[2:] if path.startswith(prefix) else path
+
+    if not any(HUNK_HEADER.match(line) for line in lines):
+        unnumbered = DiffHunk(1, 0, 1, 0, "", numbered=False)
+        for number, line in enumerate(lines, start=1):
+            kind = line[:1] if line[:1] in "+-\\" and line else " "
+            if line[:1] not in ("+", "-", " ", "\\", ""):
+                raise ValueError(f"{where} line {number} is not a diff line: it must start with '+', '-' or a space")
+            unnumbered.lines.append(DiffLine(kind, line[1:]))
+        return [DiffFile(hunks=[unnumbered])]
+
+    for number, line in enumerate(lines, start=1):
+        if hunk is not None and (remaining_old > 0 or remaining_new > 0 or line.startswith("\\")):
+            marker = line[:1]
+            if marker == "\\":
+                hunk.lines.append(DiffLine("\\", line[1:].strip()))
+            elif marker in ("+", "-", " ", ""):
+                kind = marker or " "
+                entry = DiffLine(kind, line[1:])
+                if kind != "+":
+                    entry.old = old_number
+                    old_number += 1
+                    remaining_old -= 1
+                if kind != "-":
+                    entry.new = new_number
+                    new_number += 1
+                    remaining_new -= 1
+                hunk.lines.append(entry)
+            else:
+                raise ValueError(f"{where} line {number} is inside a hunk but does not start with '+', '-' or a space")
+            continue
+        hunk = None
+        header = HUNK_HEADER.match(line)
+        if header:
+            if current is None:
+                current = DiffFile()
+                files.append(current)
+            old_start, old_len, new_start, new_len = int(header[1]), int(header[2] or 1), int(header[3]), int(header[4] or 1)
+            hunk = DiffHunk(old_start, old_len, new_start, new_len, header[5].strip())
+            current.hunks.append(hunk)
+            old_number = old_start if old_len else old_start + 1
+            new_number = new_start if new_len else new_start + 1
+            remaining_old, remaining_new = old_len, new_len
+        elif line.startswith("diff --git "):
+            current = DiffFile()
+            files.append(current)
+            paths = re.match(r"diff --git a/(.+) b/(.+)$", line)
+            if paths:
+                current.old_path, current.new_path = paths[1], paths[2]
+        elif line.startswith("--- "):
+            if current is None or current.hunks:
+                current = DiffFile()
+                files.append(current)
+            current.old_path = None if line[4:].startswith("/dev/null") else strip_prefix(line[4:], "a/")
+            if current.old_path is None:
+                current.status = "new"
+        elif line.startswith("+++ ") and current is not None:
+            current.new_path = None if line[4:].startswith("/dev/null") else strip_prefix(line[4:], "b/")
+            if current.new_path is None:
+                current.status = "deleted"
+        elif current is not None and line.startswith("new file mode"):
+            current.status = "new"
+        elif current is not None and line.startswith("deleted file mode"):
+            current.status = "deleted"
+        elif current is not None and line.startswith("rename from "):
+            current.status, current.old_path = "renamed", line[12:]
+        elif current is not None and line.startswith("rename to "):
+            current.status, current.new_path = "renamed", line[10:]
+        elif current is not None and line.startswith("copy from "):
+            current.status, current.old_path = "copied", line[10:]
+        elif current is not None and line.startswith("copy to "):
+            current.status, current.new_path = "copied", line[8:]
+        elif current is not None and (line.startswith("Binary files ") or line.startswith("GIT binary patch")):
+            current.status = "binary"
+        elif line[:1] in ("+", "-", " ") and line:
+            raise ValueError(f"{where} line {number} is outside any hunk. Check the counts in the preceding @@ header")
+    return files
+
+
+def render_diff(page: Page, fence: Chart) -> str:
+    """Render a ```diff or ```patch fence as one block per file with a two-column line-number gutter.
+
+    The old and new line numbers and the ``+``/``-`` marker sit in the gutter, which is not
+    selectable, so copying a selection gives the code alone. The ``lang`` attribute names the
+    language to highlight, and defaults to the language of each file's name. Each side of a
+    file is highlighted as a whole, so strings and comments that span lines stay correct.
+    Hunks are separated by a row that says how many lines are not shown and the hunk's
+    function context."""
+    where = f"Diff fence in {page.relative}"
+    for attribute in ("source", "file", "numbers", "line", "root"):
+        if attribute in fence.attributes:
+            raise ValueError(f"{where} cannot use {attribute}=, because a diff numbers its own lines")
+    files = parse_diff(where, fence.code)
+    language = fence.attributes.get("lang")
+    sections = []
+    for diff_file in files:
+        lexer = None
+        if language:
+            try:
+                lexer = get_lexer_by_name(language)
+            except ClassNotFound as error:
+                raise ValueError(f"{where} names an unknown language: {language}") from error
+        elif diff_file.path:
+            try:
+                lexer = get_lexer_for_filename(diff_file.path)
+            except ClassNotFound:
+                lexer = None
+
+        def highlighted(kinds: str) -> list[str]:
+            source = [entry.text for hunk in diff_file.hunks for entry in hunk.lines if entry.kind in kinds]
+            if lexer is None:
+                return [html.escape(text) for text in source]
+            return highlight("\n".join(source) + "\n", lexer, HtmlFormatter(nowrap=True)).split("\n")
+
+        old_html, new_html = highlighted(" -"), highlighted(" +")
+        old_index = new_index = 0
+        added = removed = 0
+        body: list[str] = []
+        shown_up_to = 1
+        for hunk in diff_file.hunks:
+            first = hunk.old_start if hunk.old_len else hunk.old_start + 1
+            hidden = first - shown_up_to
+            if hunk.numbered and (hidden > 0 or hunk.heading):
+                text = f'{hidden} line{"" if hidden == 1 else "s"} not shown' if hidden > 0 else ""
+                heading = f'<span class="diff-heading">{html.escape(hunk.heading)}</span>' if hunk.heading else ""
+                body.append(f'<tr class="diff-gap"><td class="diff-num" colspan="2" aria-hidden="true">&#8943;</td><td class="diff-mark"></td><td class="diff-code">{html.escape(text)}{" " if text and heading else ""}{heading}</td></tr>')
+            shown_up_to = hunk.old_start + hunk.old_len if hunk.old_len else hunk.old_start + 1
+            for entry in hunk.lines:
+                if entry.kind == "\\":
+                    body.append(f'<tr class="diff-note"><td class="diff-num" colspan="2"></td><td class="diff-mark">\\</td><td class="diff-code">{html.escape(entry.text)}</td></tr>')
+                    continue
+                if entry.kind == "-":
+                    code_html, removed = old_html[old_index], removed + 1
+                elif entry.kind == "+":
+                    code_html, added = new_html[new_index], added + 1
+                else:
+                    code_html = new_html[new_index]
+                if entry.kind != "+":
+                    old_index += 1
+                if entry.kind != "-":
+                    new_index += 1
+                old_cell = "" if entry.old is None or not hunk.numbered else str(entry.old)
+                new_cell = "" if entry.new is None or not hunk.numbered else str(entry.new)
+                row = {"+": "diff-add", "-": "diff-del", " ": "diff-ctx"}[entry.kind]
+                marker = {"+": "+", "-": "-", " ": ""}[entry.kind]
+                body.append(f'<tr class="diff-row {row}"><td class="diff-num">{old_cell}</td><td class="diff-num">{new_cell}</td><td class="diff-mark">{marker}</td><td class="diff-code">{code_html}</td></tr>')
+        if diff_file.status == "binary":
+            body.append('<tr class="diff-note"><td class="diff-num" colspan="2"></td><td class="diff-mark"></td><td class="diff-code">Binary file not shown</td></tr>')
+        elif not diff_file.hunks:
+            body.append('<tr class="diff-note"><td class="diff-num" colspan="2"></td><td class="diff-mark"></td><td class="diff-code">No content changes</td></tr>')
+        name = diff_file.path
+        if diff_file.status in ("renamed", "copied") and diff_file.old_path:
+            name = f"{diff_file.old_path} → {diff_file.new_path}"
+        status = {"new": "new file", "deleted": "deleted", "renamed": "renamed", "copied": "copied", "binary": "binary"}.get(diff_file.status or "", "")
+        label = f"{lexer.name} diff" if lexer is not None else "Diff"
+        counts = f'<span class="diff-count diff-count-add">+{added}</span> <span class="diff-count diff-count-del">&minus;{removed}</span>' if diff_file.hunks else ""
+        title = f'<span class="code-source">{html.escape(name)}</span>' if name else ""
+        badge = f'<span class="diff-badge">{status}</span>' if status else ""
+        header = f'<div class="code-header"><span class="diff-title">{title}{badge}{counts}</span><span class="code-language">{html.escape(label)}</span></div>'
+        caption = f"Changes to {html.escape(name)}" if name else "Changes"
+        table = (
+            f'<div class="diff-scroll"><table class="diff-table"><caption class="visually-hidden">{caption}</caption>'
+            '<thead class="visually-hidden"><tr><th scope="col">Old line</th><th scope="col">New line</th><th scope="col">Change</th><th scope="col">Code</th></tr></thead>'
+            f'<tbody>{"".join(body)}</tbody></table></div>'
+        )
+        sections.append(f'<div class="highlight diff-view">{header}{table}</div>')
+    return "".join(sections)
+
 
 
 def load_chart_data(page: Page, value: str) -> tuple[dict[str, object], list[dict[str, object]]]:
@@ -722,31 +947,6 @@ def read_responses(source: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
-def mark_diff_lines(block: str) -> str:
-    """Turn each added, removed and hunk-header line of a highlighted diff into a full-width line.
-
-    Pygments marks the ``---`` and ``+++`` file header lines as removed and added, so those
-    two lines before the first hunk are relabelled as headers. The ``+`` and ``-`` characters
-    stay in the text, so the meaning does not depend on colour."""
-    code_start = block.find('<td class="code">')
-    if code_start < 0:
-        return block
-    head, code = block[:code_start], block[code_start:]
-    seen_hunk = False
-
-    def line(match: re.Match[str]) -> str:
-        nonlocal seen_hunk
-        kind, text = match.group(1), match.group(2)
-        if kind == "gu":
-            seen_hunk = True
-        elif not seen_hunk and (text.startswith("--- ") or text.startswith("+++ ")):
-            kind = "gh"
-        names = {"gi": "diff-add", "gd": "diff-del", "gu": "diff-hunk", "gh": "diff-file"}
-        return f'<span class="{kind} diff-line {names[kind]}">{text}\n</span>'
-
-    return head + re.sub(r'<span class="(gi|gd|gu|gh)">(.*?)</span>\n', line, code)
-
-
 def markdown_html(page: Page) -> str:
     body = page.body
     # The renderer owns the document H1. Permit a source page to repeat its
@@ -821,7 +1021,7 @@ def markdown_html(page: Page) -> str:
     blocks = rendered.split('<div class="highlight">')
     if len(blocks) - 1 != len(snippets):
         raise ValueError(f"Could not associate every fenced code block with its metadata in {page.relative}")
-    labels = {"cpp": "C++", "cxx": "C++", "c++": "C++", "c": "C", "python": "Python", "haskell": "Haskell", "rust": "Rust", "bash": "Shell", "sh": "Shell", "shell": "Shell", "json": "JSON", "html": "HTML", "css": "CSS", "sql": "SQL", "diff": "Diff", "patch": "Diff"}
+    labels = {"cpp": "C++", "cxx": "C++", "c++": "C++", "c": "C", "python": "Python", "haskell": "Haskell", "rust": "Rust", "bash": "Shell", "sh": "Shell", "shell": "Shell", "json": "JSON", "html": "HTML", "css": "CSS", "sql": "SQL"}
     rendered_parts = [blocks[0]]
     for snippet, block in zip(snippets, blocks[1:]):
         language = snippet.language.lower()
@@ -849,8 +1049,6 @@ def markdown_html(page: Page) -> str:
                 raise ValueError(f"Fence in {page.relative} lists {len(snippet.numbers)} numbers= but has {lines} lines")
             labels_iter = iter(snippet.numbers or range(snippet.line, snippet.line + lines))
             block = gutter.sub(lambda _match: f'<span class="normal">{next(labels_iter)}</span>', block)
-        if language in {"diff", "patch"}:
-            block = mark_diff_lines(block)
         rendered_parts.append(f'<div class="highlight language-{language_class}">{header}{block}')
     rendered = "".join(rendered_parts)
     heading_badge_iter = iter(heading_badges)
@@ -899,6 +1097,8 @@ def markdown_html(page: Page) -> str:
         elif chart.kind == FORM_FIELDS_LANGUAGE:
             block = form_blocks[index]
             rendered = rendered.replace(f"<p>{token}</p>", render_form_part(forms[block.form_id], block.fields))
+        elif chart.kind in DIFF_LANGUAGES:
+            rendered = rendered.replace(f"<p>{token}</p>", render_diff(page, chart))
         else:
             rendered = rendered.replace(f"<p>{token}</p>", render_chart(page, chart, chart_index))
             chart_index += 1
@@ -961,7 +1161,7 @@ const b=document.body,t=document.querySelector('.theme-toggle'),s=localStorage.g
 b.dataset.theme=s;t.setAttribute('aria-pressed',s==='dark');
 t.onclick=()=>{{b.dataset.theme=b.dataset.theme==='light'?'dark':'light';localStorage.setItem('local-report-theme',b.dataset.theme);t.setAttribute('aria-pressed',b.dataset.theme==='dark')}};
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(e=>new bootstrap.Tooltip(e));
-const sr=()=>document.querySelectorAll('.table-frame,.figure-scroll,td.code pre').forEach(e=>{{if(e.scrollWidth>e.clientWidth+1){{e.setAttribute('tabindex','0');e.setAttribute('role','group');e.setAttribute('aria-label',e.classList.contains('table-frame')?'Scrollable table':e.classList.contains('figure-scroll')?'Scrollable figure':'Scrollable code')}}else{{['tabindex','role','aria-label'].forEach(a=>e.removeAttribute(a))}}}});sr();addEventListener('load',sr);new ResizeObserver(sr).observe(document.body);
+const sr=()=>document.querySelectorAll('.table-frame,.figure-scroll,td.code pre,.diff-scroll').forEach(e=>{{if(e.scrollWidth>e.clientWidth+1){{e.setAttribute('tabindex','0');e.setAttribute('role','group');e.setAttribute('aria-label',e.classList.contains('table-frame')?'Scrollable table':e.classList.contains('figure-scroll')?'Scrollable figure':'Scrollable code')}}else{{['tabindex','role','aria-label'].forEach(a=>e.removeAttribute(a))}}}});sr();addEventListener('load',sr);new ResizeObserver(sr).observe(document.body);
 const m=document.getElementById('source-code-modal'),f=m.querySelector('.source-code-frame'),mt=m.querySelector('.modal-title'),fp=m.querySelector('.source-code-full-page');
 m.addEventListener('show.bs.modal',e=>{{const a=e.relatedTarget;if(!a)return;const u=new URL(a.href,window.location.href);u.searchParams.set('line',a.dataset.sourceLine);const eu=new URL(u);eu.searchParams.set('embed','1');eu.searchParams.set('theme',b.dataset.theme);mt.textContent=`${{a.dataset.sourcePath}}:${{a.dataset.sourceLine}}`;f.title=`${{a.dataset.sourcePath}} at line ${{a.dataset.sourceLine}}`;fp.href=u.href;f.src=eu.href;}});
 f.addEventListener('load',()=>{{if(!f.src)return;if(f.contentDocument)f.contentDocument.addEventListener('keydown',e=>{{if(e.key==='Escape'){{const i=bootstrap.Modal.getInstance(m);if(i)i.hide();}}}});const id=new URL(f.src).hash.slice(1),line=f.contentDocument&&f.contentDocument.getElementById(id);if(line){{line.scrollIntoView({{block:'center'}});requestAnimationFrame(()=>line.scrollIntoView({{block:'center'}}));}}}});

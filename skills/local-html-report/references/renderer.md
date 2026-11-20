@@ -108,11 +108,32 @@ matter block can supply `title` and `description`.
    rendering fails. These fences get no provenance link, and `numbers=` cannot be combined
    with `source=`.
 
-   Show a change as a unified diff in a `diff` fence (`patch` also works). Added, removed and
-   hunk-header lines get a full-width tint and keep their `+`, `-` and `@@` characters, so the
-   meaning does not rely on colour. The `---` and `+++` lines before the first hunk render as
-   file headers. The gutter numbers the diff lines like any plain fence, so use `numbers=` only
-   when those lines come from a numbered listing. Paste real `git diff` output unchanged.
+   Show a change as a unified diff in a `diff` fence (`patch` also works). Paste real `git diff`
+   or `diff -u` output, or write just the hunks of the lines that matter. The renderer builds
+   one block per file, with the path (`old → new` for a rename), a badge for new, deleted,
+   renamed and binary files, and the `+N −M` counts. The old and new line numbers and the `+`
+   or `-` marker sit in a gutter that is not selectable, so copying gives the code alone. A
+   row says how many lines lie between hunks, with the function context from the `@@` line,
+   and the code keeps its syntax highlighting. Each side of the file is highlighted as a
+   whole, so comments and strings that span lines stay correct.
+
+   ````markdown
+   ```diff {lang=cpp}
+   @@ -66,5 +66,6 @@ bool Filter::apply(Event& evt)
+      if (decision) {
+   -    release_data();
+   +    release_data(evt);
+   +    log("released");
+      }
+   ```
+   ````
+
+   The language comes from `lang=` (any Pygments name), and otherwise from each file's name in
+   the diff headers. Set `lang=` when the diff has no file headers, or the code is plain. Line
+   numbers come from the `@@` headers, so they must be right: the renderer rejects a hunk whose
+   line counts disagree with its body. A diff with no `@@` line at all, only `+`, `-` and
+   context lines, is shown without line numbers. A diff fence takes no `source=`, `numbers=` or
+   `line=`, and must be top level, not inside a list or quote.
 7. To show a real source file on demand, serve the report with an explicit root for each code tree that must be viewable:
 
    ```sh

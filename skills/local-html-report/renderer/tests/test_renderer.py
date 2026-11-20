@@ -89,15 +89,45 @@ class SourceSnippetTests(TestCase):
     def gutter(self, rendered: str) -> list[str]:
         return re.findall(r'<span class="normal">(\d+)</span>', rendered)
 
-    def test_diff_fence_marks_added_removed_and_hunk_lines(self) -> None:
-        body = "```diff\n--- a/x.c\n+++ b/x.c\n@@ -1,2 +1,2 @@\n ctx\n-old\n+new\n```\n"
+    def test_diff_fence_numbers_lines_and_moves_markers_to_the_gutter(self) -> None:
+        body = "```diff\ndiff --git a/x.c b/x.c\n--- a/x.c\n+++ b/x.c\n@@ -10,3 +10,3 @@ int main()\n ctx\n-old\n+new\n```\n"
         rendered = markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, body))
-        self.assertEqual(2, rendered.count("diff-file"))
-        self.assertEqual(1, rendered.count("diff-hunk"))
-        self.assertEqual(1, rendered.count("diff-del"))
-        self.assertEqual(1, rendered.count("diff-add"))
-        self.assertIn(">Diff<", rendered)
-        self.assertEqual(["1", "2", "3", "4", "5", "6"], self.gutter(rendered))
+        self.assertIn('<span class="code-source">x.c</span>', rendered)
+        self.assertIn("C diff", rendered)
+        self.assertIn('<tr class="diff-del"', rendered.replace("diff-row ", ""))
+        self.assertIn('<td class="diff-num">11</td><td class="diff-num"></td><td class="diff-mark">-</td>', rendered)
+        self.assertIn('<td class="diff-num"></td><td class="diff-num">11</td><td class="diff-mark">+</td>', rendered)
+        self.assertIn("9 lines not shown", rendered)
+        self.assertIn('<span class="diff-heading">int main()</span>', rendered)
+        self.assertNotIn(">+new<", rendered)
+        self.assertRegex(rendered, r'class="diff-code"><span class="\w+">new</span>|class="diff-code">.*new')
+
+    def test_diff_fence_highlights_the_named_language_across_lines(self) -> None:
+        body = "```diff {lang=cpp}\n@@ -1,2 +1,2 @@\n /* a\n-   b */ int x;\n+   b */ int y;\n```\n"
+        rendered = markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, body))
+        self.assertIn("C++ diff", rendered)
+        self.assertRegex(rendered, r'<td class="diff-code"><span class="(cm|c\d?)">   b \*/</span>')
+
+    def test_diff_fence_reports_file_status_and_gaps(self) -> None:
+        body = (
+            "```diff\ndiff --git a/o.py b/n.py\nsimilarity index 90%\nrename from o.py\nrename to n.py\n"
+            "--- a/o.py\n+++ b/n.py\n@@ -1,1 +1,1 @@\n-a\n+b\n@@ -20,1 +20,1 @@\n-c\n+d\n```\n"
+        )
+        rendered = markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, body))
+        self.assertIn("o.py \u2192 n.py", rendered)
+        self.assertIn('<span class="diff-badge">renamed</span>', rendered)
+        self.assertIn("18 lines not shown", rendered)
+
+    def test_diff_fence_without_hunk_headers_is_unnumbered(self) -> None:
+        rendered = markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, "```diff {lang=python}\n-a = 1\n+a = 2\n```\n"))
+        self.assertIn('<td class="diff-num"></td><td class="diff-num"></td><td class="diff-mark">-</td>', rendered)
+
+    def test_diff_fence_rejects_inconsistent_counts_and_source(self) -> None:
+        wrong = "```diff\n@@ -1,1 +1,1 @@\n-a\n+b\n+c\n```\n"
+        with self.assertRaises(ValueError):
+            markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, wrong))
+        with self.assertRaises(ValueError):
+            markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, '```diff {source="x.c" line=1}\n+a\n```\n'))
 
     def test_numbers_attribute_sets_gutter_of_plain_fence(self) -> None:
         page = Page(Path("a.md"), Path("a.md"), "A", None, '```text {numbers="2217,2248,2420-2421"}\na\nb\nc\nd\n```\n')
@@ -628,12 +658,20 @@ class AccessibilityTests(TestCase):
                     with self.subTest(theme=name, colour=colour, background=background):
                         self.assertGreaterEqual(_contrast(colour, background), 4.5)
 
-    def test_diff_line_text_reaches_4_5(self) -> None:
-        for name, theme in zip(("light", "dark"), _theme_variables()):
-            for key, share in (("success", 0.07), ("danger", 0.07)):
-                with self.subTest(theme=name, kind=key):
-                    self.assertGreaterEqual(_contrast(theme["ink"], _mix(theme[key], theme["code"], share)), 4.5)
-            self.assertGreaterEqual(_contrast(theme["blue"], _mix(theme["blue"], theme["code"], 0.05)), 4.5)
+    def test_diff_text_and_syntax_colours_reach_4_5_on_the_tints(self) -> None:
+        light, dark = _theme_variables()
+        for name, theme, prefix in (("light", light, ".highlight .c,"), ("dark", dark, 'body[data-theme="dark"] .highlight .c,')):
+            line = next(entry for entry in STYLESHEET.split("\n") if entry.startswith(prefix))
+            syntax = re.findall(r"\.code-file \.\w+ \{ color: (#[0-9a-f]{6})", line)
+            for kind, share in (("success", 0.04), ("danger", 0.04)):
+                background = _mix(theme[kind], theme["code"], share)
+                for colour in [theme["ink"], theme[kind], *syntax]:
+                    with self.subTest(theme=name, kind=kind, colour=colour):
+                        self.assertGreaterEqual(_contrast(colour, background), 4.5)
+            gap = _mix(theme["blue"], theme["code"], 0.05)
+            for colour in (theme["blue"], theme["ink"]):
+                with self.subTest(theme=name, kind="gap", colour=colour):
+                    self.assertGreaterEqual(_contrast(colour, gap), 4.5)
 
     def test_page_has_skip_link_and_labelled_landmarks(self) -> None:
         page = Page(source=Path("index.md"), relative=Path("index.md"), title="T", description=None, body="Text\n")
