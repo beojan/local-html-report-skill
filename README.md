@@ -45,8 +45,7 @@ No fonts need installing. Report pages use the system sans font and a bundled Io
 | Codex | `~/.agents/skills/` | `.agents/skills/` |
 | Antigravity | `~/.gemini/config/skills/` | `.agents/skills/` |
 
-You can also copy `skills/local-html-report/` into one of those folders yourself. Restart the
-tool afterwards. If Antigravity does not list the skill, check the Customizations menu, and try
+Restart the tool afterwards. If Antigravity does not list the skill, check the Customizations menu, and try
 the older `~/.gemini/antigravity/skills/` location. Recent Codex releases also still read
 `~/.codex/skills/`.
 
