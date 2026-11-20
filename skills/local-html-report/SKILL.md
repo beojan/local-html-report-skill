@@ -74,6 +74,13 @@ colours from `theme`, never `"white"` or `"black"`. Give each chart one tooltip 
 distributions as box or violin plots. Draw diagrams as inline `<svg>` in a `<figure>` and
 never as `![](x.svg)`. Details are in the renderer conventions, item 9.
 
+## Accessibility
+
+Target WCAG 2.2 AA (renderer conventions, item 20). Write meaningful alt text for every image and
+static figure, never tell chart series apart by colour alone (add dashes, symbols, or direct
+labels), keep `data=` on charts so a data table exists, and use theme colours instead of
+hard-coded ones. `local-report verify` warns about images without alt text.
+
 ## Ask the reader for decisions
 
 When the answer changes what you do next (which findings to fix, which design to pursue), put

@@ -32,6 +32,7 @@
       ink: token(style, "--chart-ink", "#444444"),
       muted: token(style, "--chart-muted", "#666666"),
       grid: token(style, "--chart-grid", "#d0d0d0"),
+      outline: token(style, "--chart-outline", "#222222"),
       font: body.fontFamily,
       fontSize: fontSize,
       scale: scale,
@@ -76,12 +77,34 @@
     });
   }
 
+  // Filled marks and legend swatches get a thin outline in the theme's outline colour, so adjacent
+  // fills stay distinguishable and each shape has a boundary that contrasts with the panel.
+  // A mark that sets its own stroke keeps it. Lines are drawn in palette colours that already
+  // meet 3:1 against the panel.
+  function outlineFilled(node, t) {
+    const marks = "g[aria-label=bar], g[aria-label=rect], g[aria-label=area], g[aria-label=dot], g[aria-label=cell]";
+    node.querySelectorAll(marks).forEach(function (group) {
+      group.querySelectorAll("rect, path, circle, ellipse").forEach(function (shape) {
+        const fill = shape.getAttribute("fill") || group.getAttribute("fill");
+        const stroke = shape.getAttribute("stroke") || group.getAttribute("stroke");
+        if (!fill || fill === "none" || (stroke && stroke !== "none")) return;
+        shape.setAttribute("stroke", t.outline);
+        shape.setAttribute("stroke-width", "0.75");
+      });
+    });
+    node.querySelectorAll("[class*=-swatch] svg rect, [class*=-swatch] svg circle").forEach(function (shape) {
+      shape.setAttribute("stroke", t.outline);
+      shape.setAttribute("stroke-width", "0.75");
+    });
+  }
+
   function draw(figure, body) {
     const canvas = figure.querySelector(".report-chart-canvas");
     const t = theme(figure);
     try {
       const result = body(window.Plot, window.d3, readData(figure), t);
       const node = figure.dataset.chartKind === "plot" ? window.Plot.plot(plotOptions(result, t)) : result;
+      if (figure.dataset.chartKind === "plot") outlineFilled(node, t);
       canvas.replaceChildren(node);
     } catch (error) {
       const message = document.createElement("p");

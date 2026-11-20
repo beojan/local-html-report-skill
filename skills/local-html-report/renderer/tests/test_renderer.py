@@ -550,5 +550,94 @@ class LayoutTests(TestCase):
     def test_svg_images_are_wrapped_for_scrolling(self) -> None:
         page = Page(source=Path("p.md"), relative=Path("p.md"), title="P", description=None, body="![Plot](assets/a.svg)\n\n![Photo](assets/b.png)\n")
         rendered = markdown_html(page)
-        self.assertIn('<span class="figure-scroll"><img', rendered)
+        self.assertIn('<span class="figure-scroll" tabindex="0"><img', rendered)
         self.assertEqual(1, rendered.count("figure-scroll"))
+
+
+def _luminance(colour: str) -> float:
+    channels = [int(colour.lstrip("#")[i : i + 2], 16) / 255 for i in (0, 2, 4)]
+    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast(a: str, b: str) -> float:
+    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+def _mix(a: str, b: str, share: float) -> str:
+    return "#" + "".join(f"{round(int(a[i:i + 2], 16) * share + int(b[i:i + 2], 16) * (1 - share)):02x}" for i in (1, 3, 5))
+
+
+def _theme_variables() -> tuple[dict[str, str], dict[str, str]]:
+    light: dict[str, str] = {}
+    dark: dict[str, str] = {}
+    for block in re.findall(r":root \{([^}]*)\}", STYLESHEET):
+        light.update(re.findall(r"--([a-z0-9-]+): (#[0-9a-f]{6});", block))
+    for block in re.findall(r'body\[data-theme="dark"\] \{([^}]*)\}', STYLESHEET):
+        dark.update(re.findall(r"--([a-z0-9-]+): (#[0-9a-f]{6});", block))
+    return light, {**light, **dark}
+
+
+class AccessibilityTests(TestCase):
+    """WCAG 2.2 AA colour contrast of the themes, and markup that supports keyboard and screen-reader use."""
+
+    def test_text_colours_reach_4_5(self) -> None:
+        for name, theme in zip(("light", "dark"), _theme_variables()):
+            backgrounds = [theme[key] for key in ("paper", "panel", "panel-muted", "code")]
+            for text in ("ink", "blue", "heading", "important", "warning", "danger", "success"):
+                for background in backgrounds:
+                    with self.subTest(theme=name, text=text, background=background):
+                        self.assertGreaterEqual(_contrast(theme[text], background), 4.5)
+
+    def test_priority_badges_reach_4_5(self) -> None:
+        for name, theme in zip(("light", "dark"), _theme_variables()):
+            for tier in ("p0", "p1", "p2", "p3", "p4", "done"):
+                colour = theme[f"prio-{tier}"]
+                with self.subTest(theme=name, tier=tier):
+                    self.assertGreaterEqual(_contrast(colour, _mix(colour, theme["panel"], 0.13)), 4.5)
+
+    def test_control_borders_and_chart_colours_reach_3(self) -> None:
+        for name, theme in zip(("light", "dark"), _theme_variables()):
+            for background in (theme["paper"], theme["panel"]):
+                with self.subTest(theme=name, what="control border", background=background):
+                    self.assertGreaterEqual(_contrast(theme["control-line"], background), 3.0)
+            for index in range(1, 8):
+                with self.subTest(theme=name, what=f"chart-{index}"):
+                    self.assertGreaterEqual(_contrast(theme[f"chart-{index}"], theme["chart-panel"]), 3.0)
+            for key in ("chart-ink", "chart-muted"):
+                with self.subTest(theme=name, what=key):
+                    self.assertGreaterEqual(_contrast(theme[key], theme["chart-panel"]), 4.5)
+
+    def test_syntax_colours_reach_4_5(self) -> None:
+        light, dark = _theme_variables()
+        for name, theme, prefix in (("light", light, ".highlight .c,"), ("dark", dark, 'body[data-theme="dark"] .highlight .c,')):
+            line = next(entry for entry in STYLESHEET.split("\n") if entry.startswith(prefix))
+            for colour in re.findall(r"\.code-file \.\w+ \{ color: (#[0-9a-f]{6})", line):
+                for background in (theme["code"], theme["panel-muted"]):
+                    with self.subTest(theme=name, colour=colour, background=background):
+                        self.assertGreaterEqual(_contrast(colour, background), 4.5)
+
+    def test_page_has_skip_link_and_labelled_landmarks(self) -> None:
+        page = Page(source=Path("index.md"), relative=Path("index.md"), title="T", description=None, body="Text\n")
+        rendered = document(page, [page])
+        self.assertIn('href="#main-content"', rendered)
+        self.assertIn('<main id="main-content"', rendered)
+        self.assertIn('<nav class="navbar navbar-expand-lg sticky-top" aria-label="Pages">', rendered)
+
+    def test_scroll_regions_are_keyboard_focusable(self) -> None:
+        body = "| a | b |\n| - | - |\n| 1 | 2 |\n\n![Plot](assets/a.svg)\n\n```python\nprint(1)\n```\n"
+        rendered = markdown_html(Page(source=Path("p.md"), relative=Path("p.md"), title="P", description=None, body=body))
+        self.assertIn('table-frame" tabindex="0"', rendered)
+        self.assertIn('class="figure-scroll" tabindex="0"', rendered)
+        self.assertIn('<td class="code"><div><pre tabindex="0">', rendered)
+
+    def test_verify_warns_about_missing_alt_text(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "index.md").write_text("# T\n\n![](assets/a.png)\n\n![Described](assets/b.png)\n", encoding="utf-8")
+            captured = io.StringIO()
+            with redirect_stderr(captured):
+                verify_report(root, (root,))
+        self.assertIn("assets/a.png has no alt text", captured.getvalue())
+        self.assertNotIn("assets/b.png", captured.getvalue())
