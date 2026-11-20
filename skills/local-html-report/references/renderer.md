@@ -107,6 +107,12 @@ matter block can supply `title` and `description`.
    then show a second set. The count in `numbers=` must equal the number of lines, or
    rendering fails. These fences get no provenance link, and `numbers=` cannot be combined
    with `source=`.
+
+   Show a change as a unified diff in a `diff` fence (`patch` also works). Added, removed and
+   hunk-header lines get a full-width tint and keep their `+`, `-` and `@@` characters, so the
+   meaning does not rely on colour. The `---` and `+++` lines before the first hunk render as
+   file headers. The gutter numbers the diff lines like any plain fence, so use `numbers=` only
+   when those lines come from a numbered listing. Paste real `git diff` output unchanged.
 7. To show a real source file on demand, serve the report with an explicit root for each code tree that must be viewable:
 
    ```sh

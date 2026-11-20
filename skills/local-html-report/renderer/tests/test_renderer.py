@@ -89,6 +89,16 @@ class SourceSnippetTests(TestCase):
     def gutter(self, rendered: str) -> list[str]:
         return re.findall(r'<span class="normal">(\d+)</span>', rendered)
 
+    def test_diff_fence_marks_added_removed_and_hunk_lines(self) -> None:
+        body = "```diff\n--- a/x.c\n+++ b/x.c\n@@ -1,2 +1,2 @@\n ctx\n-old\n+new\n```\n"
+        rendered = markdown_html(Page(Path("a.md"), Path("a.md"), "A", None, body))
+        self.assertEqual(2, rendered.count("diff-file"))
+        self.assertEqual(1, rendered.count("diff-hunk"))
+        self.assertEqual(1, rendered.count("diff-del"))
+        self.assertEqual(1, rendered.count("diff-add"))
+        self.assertIn(">Diff<", rendered)
+        self.assertEqual(["1", "2", "3", "4", "5", "6"], self.gutter(rendered))
+
     def test_numbers_attribute_sets_gutter_of_plain_fence(self) -> None:
         page = Page(Path("a.md"), Path("a.md"), "A", None, '```text {numbers="2217,2248,2420-2421"}\na\nb\nc\nd\n```\n')
         self.assertEqual(["2217", "2248", "2420", "2421"], self.gutter(markdown_html(page)))
@@ -617,6 +627,13 @@ class AccessibilityTests(TestCase):
                 for background in (theme["code"], theme["panel-muted"]):
                     with self.subTest(theme=name, colour=colour, background=background):
                         self.assertGreaterEqual(_contrast(colour, background), 4.5)
+
+    def test_diff_line_text_reaches_4_5(self) -> None:
+        for name, theme in zip(("light", "dark"), _theme_variables()):
+            for key, share in (("success", 0.07), ("danger", 0.07)):
+                with self.subTest(theme=name, kind=key):
+                    self.assertGreaterEqual(_contrast(theme["ink"], _mix(theme[key], theme["code"], share)), 4.5)
+            self.assertGreaterEqual(_contrast(theme["blue"], _mix(theme["blue"], theme["code"], 0.05)), 4.5)
 
     def test_page_has_skip_link_and_labelled_landmarks(self) -> None:
         page = Page(source=Path("index.md"), relative=Path("index.md"), title="T", description=None, body="Text\n")

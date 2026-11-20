@@ -78,6 +78,7 @@ code { color: var(--ink); background: transparent; padding: 0; border-radius: 0;
 pre { overflow-x: auto; padding: 1rem; background: var(--code); border: 1px solid var(--line); border-left: .28rem solid var(--blue); border-radius: var(--radius); } pre code { padding: 0; background: transparent; }
 .highlight { margin: 1.35rem 0; overflow: hidden; background: var(--code); border: 1px solid var(--line); border-left: .28rem solid var(--blue); border-radius: var(--radius); } .code-header { display: flex; min-height: 1.8rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .42rem .75rem; color: var(--blue); background: var(--panel-muted); border-bottom: 1px solid var(--line); font: 600 .72rem/1.2 var(--sans); letter-spacing: .045em; } .code-language { margin-left: auto; text-transform: uppercase; } .code-source { min-width: 0; overflow-wrap: anywhere; color: var(--ink); font-family: "Report Iosevka", Iosevka, monospace; font-weight: 400; letter-spacing: 0; text-decoration: none; } .code-source:hover { color: var(--blue); text-decoration: none; } .highlight pre { margin: 0; }
 table.highlighttable { width: 100%; margin: 0; border-collapse: collapse; background: var(--code); border: 0; } table.highlighttable td { padding: 0; border: 0; background: var(--code); vertical-align: top; } table.highlighttable td.linenos { width: 1%; background: var(--panel-muted); border-right: 1px solid var(--line); user-select: none; } table.highlighttable .linenos pre { padding: 1rem .7rem; color: color-mix(in srgb, var(--ink) 90%, transparent); text-align: right; border: 0; border-radius: 0; } table.highlighttable .linenos a { color: inherit; text-decoration: none; } table.highlighttable .linenos a:hover { color: var(--blue); text-decoration: underline; } table.highlighttable .code { width: 100%; } table.highlighttable .code pre { padding: 1rem 1.1rem; border: 0; border-radius: 0; }
+.highlight .diff-line { display: block; margin: 0 -1.1rem; padding: 0 1.1rem; } .highlight .diff-add { color: var(--ink); background: color-mix(in srgb, var(--success) 7%, var(--code)); } .highlight .diff-del { color: var(--ink); background: color-mix(in srgb, var(--danger) 7%, var(--code)); } .highlight .diff-hunk { color: var(--blue); background: color-mix(in srgb, var(--blue) 5%, var(--code)); } .highlight .diff-file { color: var(--heading); font-weight: 700; }
 .highlight .c, .highlight .c1, .highlight .cm, .code-file .c, .code-file .c1, .code-file .cm { color: #5f5f5f; font-style: italic; } .highlight .s, .highlight .s1, .highlight .s2, .code-file .s, .code-file .s1, .code-file .s2 { color: #496800; } .highlight .m, .highlight .mi, .highlight .mf, .code-file .m, .code-file .mi, .code-file .mf { color: #9c4500; } .highlight .k, .highlight .kc, .highlight .kd, .highlight .kn, .highlight .kr, .code-file .k, .code-file .kc, .code-file .kd, .code-file .kn, .code-file .kr { color: #af005f; } .highlight .o, .highlight .p, .code-file .o, .code-file .p { color: #006684; } .highlight .n, .highlight .nf, .highlight .nn, .code-file .n, .code-file .nf, .code-file .nn { color: #005f87; } .highlight .err, .code-file .err { color: #c00000; }
 body[data-theme="dark"] .highlight .c, body[data-theme="dark"] .highlight .c1, body[data-theme="dark"] .highlight .cm, body[data-theme="dark"] .code-file .c, body[data-theme="dark"] .code-file .c1, body[data-theme="dark"] .code-file .cm { color: #95a3a5; } body[data-theme="dark"] .highlight .s, body[data-theme="dark"] .highlight .s1, body[data-theme="dark"] .highlight .s2, body[data-theme="dark"] .code-file .s, body[data-theme="dark"] .code-file .s1, body[data-theme="dark"] .code-file .s2 { color: #95ab00; } body[data-theme="dark"] .highlight .m, body[data-theme="dark"] .highlight .mi, body[data-theme="dark"] .highlight .mf, body[data-theme="dark"] .code-file .m, body[data-theme="dark"] .code-file .mi, body[data-theme="dark"] .code-file .mf { color: #ed8358; } body[data-theme="dark"] .highlight .k, body[data-theme="dark"] .highlight .kc, body[data-theme="dark"] .highlight .kd, body[data-theme="dark"] .highlight .kn, body[data-theme="dark"] .highlight .kr, body[data-theme="dark"] .code-file .k, body[data-theme="dark"] .code-file .kc, body[data-theme="dark"] .code-file .kd, body[data-theme="dark"] .code-file .kn, body[data-theme="dark"] .code-file .kr { color: #e381b1; } body[data-theme="dark"] .highlight .o, body[data-theme="dark"] .highlight .p, body[data-theme="dark"] .code-file .o, body[data-theme="dark"] .code-file .p { color: #2fb3a9; } body[data-theme="dark"] .highlight .n, body[data-theme="dark"] .highlight .nf, body[data-theme="dark"] .highlight .nn, body[data-theme="dark"] .code-file .n, body[data-theme="dark"] .code-file .nf, body[data-theme="dark"] .code-file .nn { color: #55a7e0; }
 .table-frame { margin: 1.35rem 0; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); } .table-frame table { width: 100%; margin: 0; border: 0; border-collapse: separate; border-spacing: 0; --bs-table-bg: transparent; --bs-table-color: var(--ink); --bs-table-border-color: var(--line); --bs-table-hover-bg: color-mix(in srgb, var(--blue) 7%, transparent); --bs-table-hover-color: var(--ink); }
@@ -721,6 +722,31 @@ def read_responses(source: Path) -> list[dict[str, object]]:
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
+def mark_diff_lines(block: str) -> str:
+    """Turn each added, removed and hunk-header line of a highlighted diff into a full-width line.
+
+    Pygments marks the ``---`` and ``+++`` file header lines as removed and added, so those
+    two lines before the first hunk are relabelled as headers. The ``+`` and ``-`` characters
+    stay in the text, so the meaning does not depend on colour."""
+    code_start = block.find('<td class="code">')
+    if code_start < 0:
+        return block
+    head, code = block[:code_start], block[code_start:]
+    seen_hunk = False
+
+    def line(match: re.Match[str]) -> str:
+        nonlocal seen_hunk
+        kind, text = match.group(1), match.group(2)
+        if kind == "gu":
+            seen_hunk = True
+        elif not seen_hunk and (text.startswith("--- ") or text.startswith("+++ ")):
+            kind = "gh"
+        names = {"gi": "diff-add", "gd": "diff-del", "gu": "diff-hunk", "gh": "diff-file"}
+        return f'<span class="{kind} diff-line {names[kind]}">{text}\n</span>'
+
+    return head + re.sub(r'<span class="(gi|gd|gu|gh)">(.*?)</span>\n', line, code)
+
+
 def markdown_html(page: Page) -> str:
     body = page.body
     # The renderer owns the document H1. Permit a source page to repeat its
@@ -795,7 +821,7 @@ def markdown_html(page: Page) -> str:
     blocks = rendered.split('<div class="highlight">')
     if len(blocks) - 1 != len(snippets):
         raise ValueError(f"Could not associate every fenced code block with its metadata in {page.relative}")
-    labels = {"cpp": "C++", "cxx": "C++", "c++": "C++", "c": "C", "python": "Python", "haskell": "Haskell", "rust": "Rust", "bash": "Shell", "sh": "Shell", "shell": "Shell", "json": "JSON", "html": "HTML", "css": "CSS", "sql": "SQL"}
+    labels = {"cpp": "C++", "cxx": "C++", "c++": "C++", "c": "C", "python": "Python", "haskell": "Haskell", "rust": "Rust", "bash": "Shell", "sh": "Shell", "shell": "Shell", "json": "JSON", "html": "HTML", "css": "CSS", "sql": "SQL", "diff": "Diff", "patch": "Diff"}
     rendered_parts = [blocks[0]]
     for snippet, block in zip(snippets, blocks[1:]):
         language = snippet.language.lower()
@@ -823,6 +849,8 @@ def markdown_html(page: Page) -> str:
                 raise ValueError(f"Fence in {page.relative} lists {len(snippet.numbers)} numbers= but has {lines} lines")
             labels_iter = iter(snippet.numbers or range(snippet.line, snippet.line + lines))
             block = gutter.sub(lambda _match: f'<span class="normal">{next(labels_iter)}</span>', block)
+        if language in {"diff", "patch"}:
+            block = mark_diff_lines(block)
         rendered_parts.append(f'<div class="highlight language-{language_class}">{header}{block}')
     rendered = "".join(rendered_parts)
     heading_badge_iter = iter(heading_badges)
