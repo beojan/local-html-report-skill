@@ -96,11 +96,19 @@
     event.preventDefault();
     checkGroups(form);
     // checkValidity covers the controls in form-fields blocks too, through their form attribute.
+    const controls = Array.from(form.elements);
     if (!form.checkValidity()) {
+      const invalid = controls.filter(function (control) { return control.willValidate && !control.checkValidity(); });
+      controls.forEach(function (control) {
+        if (invalid.indexOf(control) >= 0) control.setAttribute("aria-invalid", "true");
+        else control.removeAttribute("aria-invalid");
+      });
       parts(form).forEach(function (part) { part.classList.add("was-validated"); });
       status(form, "danger", "Some answers are missing. Fill in the marked fields and send again.");
+      if (invalid.length) invalid[0].focus();
       return;
     }
+    controls.forEach(function (control) { control.removeAttribute("aria-invalid"); });
     parts(form).forEach(function (part) { part.classList.remove("was-validated"); });
     const button = event.submitter || form.querySelector("button[type=submit]");
     const payload = {

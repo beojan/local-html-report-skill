@@ -622,6 +622,8 @@ class AccessibilityTests(TestCase):
         page = Page(source=Path("index.md"), relative=Path("index.md"), title="T", description=None, body="Text\n")
         rendered = document(page, [page])
         self.assertIn('href="#main-content"', rendered)
+        self.assertIn("Scrollable table", rendered)
+        self.assertIn('<main id="main-content" tabindex="-1"', rendered)
         self.assertIn('<main id="main-content"', rendered)
         self.assertIn('<nav class="navbar navbar-expand-lg sticky-top" aria-label="Pages">', rendered)
 
