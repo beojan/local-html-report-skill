@@ -37,15 +37,7 @@ No fonts need installing. Report pages use the system sans font and a bundled Io
   $skill-installer install https://github.com/beojan/local-html-report-skill/tree/main/skills/local-html-report
   ```
 
-**Or copy the skill folder yourself:**
-
-```sh
-git clone https://github.com/beojan/local-html-report-skill && cd local-html-report-skill
-./install.sh                      # Claude Code, Codex and Antigravity, user level
-./install.sh --claude             # or choose tools: --codex, --antigravity
-./install.sh --project ~/my-repo  # project level instead
-./install.sh --link               # symlink to this checkout so that updates apply immediately
-```
+**Or copy `skills/local-html-report/` into one of these folders yourself** (for example when offline):
 
 | Tool | User-level folder | Project-level folder |
 | --- | --- | --- |
