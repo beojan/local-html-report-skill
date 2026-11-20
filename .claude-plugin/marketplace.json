@@ -1,0 +1,17 @@
+{
+  "name": "local-html-report-skill",
+  "description": "Agent skills for writing reviews and analyses as local HTML reports.",
+  "owner": {
+    "name": "beojan"
+  },
+  "plugins": [
+    {
+      "name": "local-html-report",
+      "source": "./",
+      "description": "Local, themed multi-page HTML reports from Markdown, with a bundled renderer.",
+      "author": {
+        "name": "beojan"
+      }
+    }
+  ]
+}

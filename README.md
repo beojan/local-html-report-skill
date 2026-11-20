@@ -18,8 +18,17 @@ No fonts need installing. Report pages use the system sans font and a bundled Io
 
 ## Install
 
+**Claude Code (plugin):**
+
+```
+/plugin marketplace add beojan/local-html-report-skill
+/plugin install local-html-report --marketplace beojan/local-html-report-skill
+```
+
+**Any of the tools (skill folder):**
+
 ```sh
-git clone <this repository> && cd html-report-skill
+git clone https://github.com/beojan/local-html-report-skill && cd local-html-report-skill
 ./install.sh                      # Claude Code, Codex and Antigravity, user level
 ./install.sh --claude             # or choose tools: --codex, --antigravity
 ./install.sh --project ~/my-repo  # project level instead
