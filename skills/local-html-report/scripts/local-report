@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run the bundled local-report renderer. Needs `uv` (https://docs.astral.sh/uv/).
+# Set LOCAL_REPORT_UV_CACHE_DIR when the default uv cache is not writable (some sandboxes).
+set -eu
+
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+
+if [ -n "${LOCAL_REPORT_UV_CACHE_DIR:-}" ]; then
+    export UV_CACHE_DIR="$LOCAL_REPORT_UV_CACHE_DIR"
+fi
+
+exec uv run --project "$here/../renderer" local-report "$@"

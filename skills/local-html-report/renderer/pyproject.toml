@@ -1,0 +1,17 @@
+[project]
+name = "local-report-renderer"
+version = "0.1.0"
+description = "Render local Markdown report sites and preview them on loopback."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["Markdown>=3.7", "Pygments>=2.18"]
+
+[project.scripts]
+local-report = "local_report_renderer.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.0,<1.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+package = true
