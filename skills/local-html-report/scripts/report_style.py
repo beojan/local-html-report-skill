@@ -11,13 +11,13 @@ script declares its dependencies in a PEP 723 header, so `uv run plot.py` is all
 Text uses the style's own sans-serif font, so no font has to be installed. The page's system
 sans font may differ in face but is set to the same size.
 
-The report's body text is the system sans font at 1.08 rem (17.28 px, or 12.96 pt). An SVG embedded
-in the report displays at its natural size up to the width of the content column (about 1192 px),
-so a figure that matches the column width with 13 pt text shows its labels at the body text size
-and aligns with interactive charts that fill the column. `save_report_figure` also removes the
-fixed width and height attributes from an SVG while keeping its `viewBox`, because the column is
-sized in rem and grows wider than 1192 px when the browser's root font size exceeds 16 px. The
-SVG then fills the column at any root font size while its text scales with the body text.
+The page layout (body text size, column width) is read from `renderer/assets/layout.json`, the same
+file the renderer builds its CSS from. A figure exactly one column wide with body-size text shows
+its labels at the body text size and lines up with interactive charts. `save_report_figure` removes
+the fixed width and height from an SVG and keeps its `viewBox`, so the figure fills the column at
+any root font size or page zoom, with its text scaling along with the body text. In a window
+narrower than the column the renderer keeps the figure at full column width inside a horizontally
+scrollable box, so the text never drops below body size.
 
 Use it in place of a bare `use_atlas_style` call, after the header above:
 
@@ -29,13 +29,18 @@ Use it in place of a bare `use_atlas_style` call, after the header above:
     ...
     save_report_figure(fig, "assets/figure.svg")
 
-Do not set `fontsize=` on individual text, legends, or ticks. Leave them to inherit the 13 pt
+Do not set `fontsize=` on individual text, legends, or ticks. Leave them to inherit the body-size
 default so that every label matches the body text.
 """
 
-BODY_PT = 13.0  # 1.08 rem is 12.96 pt
-COLUMN_PX = 1192  # content column of the report: 76 rem minus the container padding
-WIDTH_IN = COLUMN_PX / 96  # 12.42 in: an SVG renders at 96 px per inch, so this fills the column
+import json
+from pathlib import Path
+
+# The page layout comes from the renderer, so the figure size cannot drift from the CSS.
+_LAYOUT = json.loads((Path(__file__).resolve().parents[1] / "renderer" / "assets" / "layout.json").read_text(encoding="utf-8"))
+BODY_PT = _LAYOUT["body_rem"] * _LAYOUT["root_px"] * 0.75  # rem to px to pt
+COLUMN_PX = (_LAYOUT["column_max_rem"] - _LAYOUT["gutter_rem"]) * _LAYOUT["root_px"]  # content column
+WIDTH_IN = COLUMN_PX / 96  # an SVG renders at 96 px per inch, so this fills the column
 
 
 def use_report_style(height_in: float = 6.0) -> None:

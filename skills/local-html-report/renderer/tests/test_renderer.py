@@ -513,3 +513,42 @@ class PriorityBadgeTests(TestCase):
         self.assertIn(".priority-heading { display: flex;", STYLESHEET)
         self.assertIn(".priority-heading-body { flex: 1 1 auto;", STYLESHEET)
 
+
+
+class LayoutTests(TestCase):
+    """The CSS and scripts/report_style.py must derive their sizes from assets/layout.json."""
+
+    @staticmethod
+    def report_style():
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[2] / "scripts" / "report_style.py"
+        spec = importlib.util.spec_from_file_location("report_style", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_stylesheet_uses_layout_values(self) -> None:
+        from local_report_renderer.cli import LAYOUT
+
+        self.assertIn(f"max-width: {LAYOUT['column_max_rem']:g}rem", STYLESHEET)
+        self.assertIn(f"font: {LAYOUT['body_rem']:g}rem/", STYLESHEET)
+        self.assertIn(f"--bs-gutter-x: {LAYOUT['gutter_rem']:g}rem", STYLESHEET)
+
+    def test_plot_helper_matches_stylesheet(self) -> None:
+        from local_report_renderer.cli import LAYOUT
+
+        style = self.report_style()
+        column_rem = LAYOUT["column_max_rem"] - LAYOUT["gutter_rem"]
+        self.assertAlmostEqual(style.COLUMN_PX, column_rem * LAYOUT["root_px"])
+        self.assertIn(f"min-width: {column_rem:g}rem", STYLESHEET)
+        self.assertAlmostEqual(style.BODY_PT, LAYOUT["body_rem"] * LAYOUT["root_px"] * 0.75)
+
+    def test_stylesheet_has_no_unfilled_placeholders(self) -> None:
+        self.assertNotRegex(STYLESHEET, r"__[A-Z_]+REM__")
+
+    def test_svg_images_are_wrapped_for_scrolling(self) -> None:
+        page = Page(source=Path("p.md"), relative=Path("p.md"), title="P", description=None, body="![Plot](assets/a.svg)\n\n![Photo](assets/b.png)\n")
+        rendered = markdown_html(page)
+        self.assertIn('<span class="figure-scroll"><img', rendered)
+        self.assertEqual(1, rendered.count("figure-scroll"))
