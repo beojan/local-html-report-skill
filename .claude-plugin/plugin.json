@@ -1,7 +1,7 @@
 {
   "name": "local-html-report",
   "description": "Write code reviews, audits, and analyses as local, themed multi-page HTML reports with highlighted code, interactive charts, and decision forms.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "homepage": "https://github.com/beojan/local-html-report-skill",
   "repository": "https://github.com/beojan/local-html-report-skill",

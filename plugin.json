@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "local-html-report",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Write code reviews, audits, and analyses as local, themed multi-page HTML reports with highlighted code, interactive charts, and decision forms.",
   "author": {
     "name": "beojan"
