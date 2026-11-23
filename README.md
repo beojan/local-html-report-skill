@@ -4,7 +4,7 @@ An agent skill that turns a code review, audit, or analysis into a local, multi-
 report. The agent writes Markdown, and a bundled renderer produces a themed site with
 syntax-highlighted code, links into source files, interactive charts (Observable Plot and D3),
 and forms that send the reader's decisions back to the agent. It works offline, with light and
-dark themes, and the report can be previewed on loopback or saved as a static snapshot.
+dark themes, and the report is served from your own machine.
 
 It follows the open Agent Skills layout (`SKILL.md` plus `scripts/` and `references/`), so the
 same folder works in Claude Code, Codex, and Antigravity.
@@ -57,6 +57,8 @@ skill tells the agent how to author, verify, and serve it. To try the renderer b
 ```sh
 skills/local-html-report/scripts/local-report serve skills/local-html-report/renderer/examples/demo-report --port 0
 ```
+
+Port 0 picks a free port, which avoids clashes with an earlier preview.
 
 Data analysis is done in [Polars](https://pola.rs), and static figures use Matplotlib with
 [`atlas-mpl-style`](https://pypi.org/project/atlas-mpl-style/), both declared in each script's
